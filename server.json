@@ -1,12 +1,1 @@
-const express=require('express');
-const app=express();
-const PORT=process.env.PORT||10000;
-const SUPABASE_URL='https://ahuzijrgtqpoutclxwjm.supabase.co';
-const SUPABASE_KEY=process.env.SUPABASE_KEY;
-let SA_BNBS=[];
-try{SA_BNBS=require('./sa_bnbs_100.json')}catch(e){console.log("No bnbs file")}
-function requirePayment(req,res,next){if(req.query.payment)return next();return res.status(402).json({x402:{price:"R2",message:"Add ?payment=paid"}})};
-app.get('/',(req,res)=>res.send(`<h1>SA BnB Agent API LIVE - ${SA_BNBS.length} BnBs</h1><p>Supabase: ${SUPABASE_URL}</p><a href="/api/search?town=Knysna&payment=paid">Test Knysna</a><br><a href="/api/bnbs?payment=paid">All BnBs</a>`));
-app.get('/api/bnbs',requirePayment,(req,res)=>{let d=SA_BNBS;if(req.query.town)d=d.filter(b=>b.town.toLowerCase()===req.query.town.toLowerCase());res.json({count:d.length,bnbs:d})});
-app.get('/api/search',requirePayment,async(req,res)=>{const town=req.query.town||'Knysna';const bnbs=SA_BNBS.filter(b=>b.town.toLowerCase()===town.toLowerCase());let activities=[];try{if(SUPABASE_KEY){const r=await fetch(`${SUPABASE_URL}/rest/v1/activities?select=*&town=eq.${town}`,{headers:{apikey:SUPABASE_KEY,Authorization:`Bearer ${SUPABASE_KEY}`}});activities=await r.json()}}catch(e){}res.json({town,bnbs,activities,count:{bnbs:bnbs.length,activities:activities.length}});});
-app.listen(PORT,()=>console.log(`LIVE on ${PORT}`));
+
