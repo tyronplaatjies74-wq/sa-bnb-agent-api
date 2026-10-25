@@ -1,1 +1,35 @@
+const express = require('express');
+const app = express();
+app.use(express.json());
+const PORT = process.env.PORT || 10000;
 
+const SUPABASE_URL = 'https://ahuzijrgtqpoutclxwjm.supabase.co';
+const SUPABASE_KEY = process.env.SUPABASE_KEY;
+let SA_BNBS = [];
+try { SA_BNBS = require('./sa_bnbs_100.json'); } catch(e){ SA_BNBS=[]; }
+
+function requirePayment(req,res,next){
+ if(req.query.payment) return next();
+ return res.status(402).json({x402:{price:"R2", payTo:"0x..."}, error:"Add ?payment=paid", endpoints:["/api/search?town=Knysna&payment=paid"]});
+}
+
+app.get('/api/bnbs', requirePayment, (req,res)=>{
+ let d = SA_BNBS;
+ if(req.query.town) d = d.filter(b=> b.town.toLowerCase()===req.query.town.toLowerCase());
+ res.json({count:d.length, bnbs:d});
+});
+app.get('/api/activities', requirePayment, async (req,res)=>{
+ const town = req.query.town || 'Knysna';
+ const r = await fetch(`${SUPABASE_URL}/rest/v1/activities?select=*&town=eq.${town}`, {headers:{apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`}});
+ const data = await r.json();
+ res.json({count:data.length, supabase:SUPABASE_URL, activities:data});
+});
+app.get('/api/search', requirePayment, async (req,res)=>{
+ const town = req.query.town || 'Knysna';
+ const bnbs = SA_BNBS.filter(b=> b.town===town).slice(0,10);
+ const ar = await fetch(`${SUPABASE_URL}/rest/v1/activities?select=*&town=eq.${town}`, {headers:{apikey:SUPABASE_KEY, Authorization:`Bearer ${SUPABASE_KEY}`}});
+ const activities = await ar.json();
+ res.json({town, bnbs, activities});
+});
+app.get('/', (req,res)=> res.send(`<h1>SA BnB Agent API LIVE</h1><p><a href="/api/search?town=Knysna&payment=paid">Test</a></p>`));
+app.listen(PORT, ()=> console.log("LIVE"));
